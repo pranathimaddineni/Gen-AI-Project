@@ -104,25 +104,26 @@ if uploaded_file and not st.session_state.pdf_uploaded:
     st.success("PDF uploaded successfully!")
 
 # -----------------------------
-# Show Chat History
+# Chat History Container
 # -----------------------------
-for msg in st.session_state.messages:
-    if msg["role"] == "user":
-        st.markdown(f"**You:** {msg['content']}")
-    else:
-        st.markdown(f"**Bot:** {msg['content']}")
+chat_area = st.container()
 
-# -----------------------------
-# Chat Input
-# -----------------------------
+with chat_area:
+    for msg in st.session_state.messages:
+        if msg["role"] == "user":
+            st.markdown(f"**You:** {msg['content']}")
+        else:
+            st.markdown(f"**Bot:** {msg['content']}")
+
+
 if st.session_state.pdf_uploaded:
-    question = st.text_input("Ask a question about the PDF:")
+    question = st.text_input("Ask any question you want to know from the PDF:", key="chat_input")
 
     if question:
         st.session_state.messages.append({"role": "user", "content": question})
 
+        # Retrieve context
         retriever = st.session_state.vector_store.as_retriever()
-
         try:
             docs = retriever.get_relevant_documents(question)
         except:
@@ -141,14 +142,24 @@ if st.session_state.pdf_uploaded:
             HumanMessage(content=f"Context:\n{context}\n\nQuestion: {question}")
         ]
 
+        # AI response
         try:
             response = llm.invoke(msgs)
             answer = response.content
         except Exception as e:
             answer = f"Error: {e}"
 
+        # Save and re-render
         st.session_state.messages.append({"role": "bot", "content": answer})
-        st.markdown(f"**Bot:** {answer}")
+
+        # Re-render whole chat AFTER append
+        chat_area.empty()
+        with chat_area:
+            for msg in st.session_state.messages:
+                if msg["role"] == "user":
+                    st.markdown(f"**You:** {msg['content']}")
+                else:
+                    st.markdown(f"**Bot:** {msg['content']}")
 
 else:
     st.info("Upload a PDF to start chatting.")
