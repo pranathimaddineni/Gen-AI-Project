@@ -1,6 +1,9 @@
-streamlit
+streamlit==1.52.1
 langchain
-PyPDF2
 openai
+PyPDF2
 faiss-cpu
 python-dotenv
+requests
+numpy
+pandas
