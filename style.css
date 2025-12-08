@@ -10,12 +10,17 @@
     background-color: rgba(255, 255, 255, 0.85);
 }
 
+div[data-baseweb="input"] > div > input:focus {
+    border: 1px solid #4A90E2 !important;
+    box-shadow: 0 0 0 2px rgba(74,144,226,0.3) !important;
+}
+
 .portfolio-banner {
     background: linear-gradient(135deg, #7F00FF, #00BFFF);    
     color: #FFFFFF;
     padding: 25px 50px;
     font-size: 42px;
-    font-family: 'Comic Sans MS', cursive, sans-serif; 
+    font-family: 'Lobster', cursive;
     font-weight: bold;
     text-align: center;
     border-radius: 15px;
