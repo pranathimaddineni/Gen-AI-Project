@@ -95,7 +95,7 @@ if uploaded_file and not st.session_state.pdf_uploaded:
         if t:
             text += t
 
-    splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=150)
+    splitter = RecursiveCharacterTextSplitter(chunk_size=2000, chunk_overlap=300)
     chunks = splitter.split_text(text)
 
     embeddings = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY)
@@ -109,7 +109,7 @@ if uploaded_file and not st.session_state.pdf_uploaded:
 chat_area = st.container()
 
 def render_chat():
-    chat_area.empty()
+    # chat_area.empty()
     with chat_area:
         for msg in st.session_state.messages:
             role = "**You:**" if msg["role"] == "user" else "**Bot:**"
@@ -174,14 +174,47 @@ def handle_question():
 # -----------------------------
 # Show chat input
 # -----------------------------
+# -----------------------------
+# Chat Input 
+# -----------------------------
 if st.session_state.pdf_uploaded:
-    st.text_input(
-        "Ask any question...",
-        key="chat_input",
-        on_change=handle_question
-    )
+    user_input = st.chat_input("Ask a question about the PDF")
+    
+    if user_input:
+        # append user message
+        st.session_state.messages.append({"role": "user", "content": user_input})
+        
+        retriever = st.session_state.vector_store.as_retriever(search_kwargs={"k":4})
+        try:
+            docs = retriever.invoke(user_input)
+        except Exception:
+            docs = []
+
+        context = "\n\n".join([d.page_content for d in docs])
+
+        SYSTEM_PROMPT = """
+You are an AI assistant analyzing a RESUME uploaded by the user.
+
+Answer based ONLY on the uploaded resume.
+If info is missing, say "The resume does not mention this."
+"""
+        human_prompt = f"Context:\n{context}\n\nQuestion:\n{user_input}"
+
+        llm = ChatOpenAI(openai_api_key=OPENAI_API_KEY, model="gpt-3.5-turbo", temperature=0)
+        response = llm.invoke([
+            SystemMessage(content=SYSTEM_PROMPT),
+            HumanMessage(content=human_prompt)
+        ])
+        answer = response.content.strip()
+
+        st.session_state.messages.append({"role":"assistant","content":answer})
+
+        # re-render chat
+        for msg in st.session_state.messages:
+            role = "**You:**" if msg["role"] == "user" else "**Bot:**"
+            st.markdown(f"{role} {msg['content']}")
 else:
     st.info("Upload a PDF to start chatting.")
 
-# Render chat messages
-render_chat()
+# # Render chat messages
+# render_chat()
